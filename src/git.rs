@@ -1,6 +1,36 @@
 use crate::http::HttpClient;
 use serde::Deserialize;
 
+#[cfg(test)]
+mod git_test {
+    use super::*;
+
+    #[test]
+    fn match_test() {
+        let project = "node";
+        let element = Element {
+            project: "Node".to_string(),
+            path: "Node.gitignore".to_string(),
+            sha: "123".to_string(),
+        };
+        assert!(element.matches(project));
+    }
+
+    #[test]
+    fn extract_test() {
+        let path1 = "Some/Path/Target.gitignore";
+        let path2 = "Target.gitignore";
+        let path3 = "Some/Target";
+        let path4 = "Target";
+
+        assert!(extract_project_name(path1).is_some());
+        assert_eq!(extract_project_name(path1), Some("Target"));
+        assert_eq!(extract_project_name(path2), Some("Target"));
+        assert!(extract_project_name(path3).is_none());
+        assert!(extract_project_name(path4).is_none());
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct FlattenGitTree {
     #[serde(rename = "tree")]

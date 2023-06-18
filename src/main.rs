@@ -30,26 +30,6 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-#[test]
-fn test() {
-    let path = "test";
-    assert_eq!(None, some_test(path));
-}
-
-#[test]
-fn test2() {
-    let path = "test";
-    let start = 0;
-    let end = 0;
-    assert_eq!("", &path[start..end]);
-}
-
-fn some_test(path: &str) -> Option<usize> {
-    let start = path.rfind('/')? + 1;
-    Some(start)
-}
-
 async fn download_blob(project: &str) {
     let uri = format!(
         "https://raw.githubusercontent.com/github/gitignore/main/{}.gitignore",
