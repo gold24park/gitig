@@ -5,6 +5,7 @@ gitignore [<options>] project
 
 download gitignore from https://github.com/github/gitignore
 https://raw.githubusercontent.com/github/gitignore/main/[Project].gitignore
+https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 
 options
     -a --append path에 파일이 있을 경우 append
@@ -19,7 +20,9 @@ https://betterprogramming.pub/building-cli-apps-in-rust-what-you-should-consider
 ## ignore files
 
 파일목록: https://api.github.com/repos/github/gitignore/git/trees/main?recursive=0
+
 파일정보: https://api.github.com/repos/github/gitignore/git/blobs/c6bba591381216b569cdcb512d98b53c53fd167d
+
 base64에 newline을 없애고 decode하면 내용가져올 수 있음.
 
 ## temp 파일들 어디 저장하면 좋을까?

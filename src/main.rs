@@ -1,20 +1,59 @@
 mod cli;
+mod git;
+mod http;
 
+use anyhow::anyhow;
 use base64;
 use cli::CmdArgs;
+use http::{HttpClient, ReqwestClient};
 use std::fs::File;
 use std::io;
-use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-#[tokio::main]
-async fn main() -> Result<(), ()> {
+use crate::git::FlattenGitTree;
+
+fn main() -> anyhow::Result<()> {
     let args = CmdArgs::from_args();
     println!("{:?}", args);
 
+    let client: Box<dyn HttpClient> = Box::new(ReqwestClient);
+
+    let git_tree =
+        FlattenGitTree::init(client.as_ref()).ok_or(anyhow!("Failed to init project list."))?;
+
+    let element = git_tree
+        .get(&args.project)
+        .ok_or(anyhow!("Cannot find project: {}", args.project)); // TODO: suggest similar projects
+
+    dbg!(element);
+
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn test() {
+    let path = "test";
+    assert_eq!(None, some_test(path));
+}
+
+#[test]
+fn test2() {
+    let path = "test";
+    let start = 0;
+    let end = 0;
+    assert_eq!("", &path[start..end]);
+}
+
+fn some_test(path: &str) -> Option<usize> {
+    let start = path.rfind('/')? + 1;
+    Some(start)
+}
+
+async fn download_blob(project: &str) {
     let uri = format!(
         "https://raw.githubusercontent.com/github/gitignore/main/{}.gitignore",
-        args.project
+        project,
     );
     let mut resp = reqwest::get(uri).await.expect("request failed");
     let body = resp.text().await.expect("body invalid");
@@ -26,6 +65,4 @@ async fn main() -> Result<(), ()> {
     let bytes = base64::decode(b64).unwrap();
     let str = String::from_utf8(bytes).unwrap();
     println!("{}", str);
-
-    Ok(())
 }
