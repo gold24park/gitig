@@ -1,4 +1,4 @@
-use crate::http::HttpClient;
+use crate::{cli, http::HttpClient};
 use serde::Deserialize;
 
 #[cfg(test)]
@@ -45,6 +45,33 @@ pub struct Element {
     sha: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct GitFile {
+    content: String,
+}
+
+pub trait GitFileDownloader {
+    fn download(&self, client: &impl HttpClient) -> Option<String>;
+}
+
+impl GitFileDownloader for Element {
+    fn download(&self, client: &impl HttpClient) -> Option<String> {
+        let url = format!(
+            "https://api.github.com/repos/github/gitignore/git/blobs/{}",
+            self.sha
+        );
+
+        let body = client.get(url.as_str()).ok()?;
+
+        let git_file: GitFile = serde_json::from_str(&body).ok()?;
+
+        let b64 = git_file.content.replace("\n", "");
+        let bytes = base64::decode(b64).ok()?;
+
+        String::from_utf8(bytes).ok()
+    }
+}
+
 pub trait ProjectMatcher {
     fn matches(&self, project: &str) -> bool;
 }
@@ -56,7 +83,7 @@ impl ProjectMatcher for Element {
 }
 
 impl FlattenGitTree {
-    pub fn init(client: &dyn HttpClient) -> Option<FlattenGitTree> {
+    pub fn init(client: &impl HttpClient) -> Option<FlattenGitTree> {
         let url = "https://api.github.com/repos/github/gitignore/git/trees/main?recursive=0";
         let body = client.get(url).ok()?;
 

@@ -8,6 +8,12 @@ pub trait HttpClient {
 
 pub struct ReqwestClient;
 
+impl ReqwestClient {
+    pub fn new() -> ReqwestClient {
+        ReqwestClient {}
+    }
+}
+
 impl HttpClient for ReqwestClient {
     fn get(&self, url: &str) -> Result<String, Box<dyn Error>> {
         let client = reqwest::blocking::Client::new();
