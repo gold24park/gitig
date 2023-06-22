@@ -2,34 +2,57 @@ mod cli;
 mod git;
 mod http;
 
-use anyhow::anyhow;
-use base64;
+use std::{fs, io};
+
+use anyhow::{anyhow, Ok};
 use cli::CmdArgs;
-use http::{HttpClient, ReqwestClient};
-use std::fs::File;
-use std::io;
+use http::ReqwestClient;
 use structopt::StructOpt;
 
 use crate::git::{FlattenGitTree, GitFileDownloader};
 
 fn main() -> anyhow::Result<()> {
     let args = CmdArgs::from_args();
-    println!("{:?}", args);
 
     let client = ReqwestClient::new();
 
     let git_tree = FlattenGitTree::init(&client).ok_or(anyhow!("Failed to init project list."))?;
 
-    let element = git_tree
-        .get(&args.project)
-        .ok_or(anyhow!("Cannot find project: {}", args.project))?;
-    // TODO: suggest similar projects
+    match git_tree.get(&args.project) {
+        Some(element) => {
+            let content = element
+                .download(&client)
+                .ok_or(anyhow!("Failed to download gitignore."))?;
 
-    dbg!(element);
+            let file_path = args.path.as_path().join(".gitignore");
 
-    let content = element.download(&client);
+            if file_path.exists() {
+                // ask user to overwrite
+                println!("File already exists. Overwrite? [y/n]");
 
-    dbg!(content);
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
 
+                if input.to_lowercase().trim() != "y" {
+                    return Ok(());
+                }
+            }
+
+            fs::write(file_path, content).map_err(|e| anyhow!("Failed to write file: {}", e))?;
+
+            println!("Successfully created .gitignore for {}", args.project);
+        }
+        None => {
+            let suggest_keywords = git_tree.suggest_keywords(&args.project);
+            println!(
+                "No project found for \"{}\". Did you mean one of these?",
+                args.project
+            );
+
+            for keyword in suggest_keywords {
+                println!("- {}", keyword);
+            }
+        }
+    }
     Ok(())
 }

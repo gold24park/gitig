@@ -1,4 +1,6 @@
-use crate::{cli, http::HttpClient};
+use std::cmp::min;
+
+use crate::http::HttpClient;
 use serde::Deserialize;
 
 #[cfg(test)]
@@ -107,6 +109,42 @@ impl FlattenGitTree {
     pub fn get(&self, project: &str) -> Option<&Element> {
         self.elements.iter().find(|e| e.matches(project))
     }
+
+    pub fn suggest_keywords(&self, keyword: &str) -> Vec<String> {
+        let keywords: Vec<String> = self
+            .elements
+            .iter()
+            .map(|e| e.project.to_lowercase())
+            .collect();
+
+        let mut candidates: Vec<(&str, usize)> = vec![];
+        let mut min_dist = usize::MAX;
+
+        for candidate in keywords.iter() {
+            let mut dist = levenshtein(&keyword, candidate);
+
+            if dist == candidate.len() {
+                dist = usize::MAX;
+            }
+
+            if candidate.starts_with(&keyword) {
+                dist = 0;
+            }
+
+            candidates.push((candidate, dist));
+            min_dist = min(min_dist, dist)
+        }
+
+        candidates.sort_by_key(|&(_, dist)| dist);
+
+        candidates
+            .iter()
+            .filter_map(|&(v, dist)| match dist <= min_dist + 1 {
+                true => Some(v.to_owned()),
+                false => None,
+            })
+            .collect::<Vec<String>>()
+    }
 }
 
 fn extract_project_name(path: &str) -> Option<&str> {
@@ -122,4 +160,35 @@ fn extract_project_name(path: &str) -> Option<&str> {
     } else {
         None
     }
+}
+
+fn levenshtein(src: &str, target: &str) -> usize {
+    let r = src.len() + 1;
+    let c = target.len() + 1;
+    let mut dist = vec![vec![0; c]; r];
+
+    for i in 0..r {
+        dist[i][0] = i
+    }
+
+    for i in 0..c {
+        dist[0][i] = i;
+    }
+
+    for i in 1..r {
+        for j in 1..c {
+            let cost = if src[i - 1..i] == target[j - 1..j] {
+                0
+            } else {
+                1
+            };
+
+            dist[i][j] = min(
+                dist[i - 1][j] + 1,
+                min(dist[i][j - 1] + 1, dist[i - 1][j - 1] + cost),
+            )
+        }
+    }
+
+    dist[src.len()][target.len()]
 }
