@@ -219,8 +219,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "gitignore"
-version = "0.1.0"
+name = "gitig"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "base64",
