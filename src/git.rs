@@ -42,7 +42,7 @@ pub struct FlattenGitTree {
 #[derive(Debug, Deserialize)]
 pub struct Element {
     #[serde(skip)]
-    project: String,
+    pub project: String,
     path: String,
     sha: String,
 }
@@ -85,6 +85,10 @@ impl ProjectMatcher for Element {
 }
 
 impl FlattenGitTree {
+    pub fn iter(&self) -> core::slice::Iter<'_, Element> {
+        self.elements.iter()
+    }
+
     pub fn init(client: &impl HttpClient) -> Option<FlattenGitTree> {
         let url = "https://api.github.com/repos/github/gitignore/git/trees/main?recursive=0";
         let body = client.get(url).ok()?;
